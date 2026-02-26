@@ -1,13 +1,15 @@
-from fastapi import FastAPI, Depends
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import FastAPI, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from jose import JWTError, jwt
+from typing import List
 
-from .database import engine, SessionLocal
-from . import models, schemas
+from . import models, schemas, database, auth
 
-models.Base.metadata.create_all(bind=engine)
+models.Base.metadata.create_all(bind=database.engine)
 
-app = FastAPI(title="API Gestão de Sinuca")
+app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
@@ -17,42 +19,104 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-def get_db():
-    db = SessionLocal()
+# Diz para o FastAPI que o token de acesso será gerado na rota "/login"
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
+
+# Função que funciona como o "Segurança da Porta": extrai e valida o Token
+def get_usuario_atual(token: str = Depends(oauth2_scheme), db: Session = Depends(database.get_db)):
+    erro_credenciais = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Não foi possível validar as credenciais (Token inválido ou expirado)",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
     try:
-        yield db
-    finally:
-        db.close()
+        # Tenta abrir o token com a nossa chave secreta
+        payload = jwt.decode(token, auth.SECRET_KEY, algorithms=[auth.ALGORITHM])
+        username: str = payload.get("sub")
+        if username is None:
+            raise erro_credenciais
+    except JWTError:
+        raise erro_credenciais
+        
+    # Vai no banco e verifica se o usuário do token realmente existe
+    usuario = db.query(models.Usuario).filter(models.Usuario.username == username).first()
+    if usuario is None:
+        raise erro_credenciais
+    return usuario
+
+# Rotas de Usuário e Login
+@app.post("/usuarios/", response_model=schemas.Usuario)
+def criar_usuario(usuario: schemas.UsuarioCreate, db: Session = Depends(database.get_db)):
+    # Verifica se o nome de usuário já existe
+    usuario_existente = db.query(models.Usuario).filter(models.Usuario.username == usuario.username).first()
+    if usuario_existente:
+        raise HTTPException(status_code=400, detail="Usuário já cadastrado.")
+    
+    # Criptografa a senha antes de salvar no banco
+    senha_criptografada = auth.obter_hash_senha(usuario.password)
+    novo_usuario = models.Usuario(username=usuario.username, hashed_password=senha_criptografada)
+    
+    db.add(novo_usuario)
+    db.commit()
+    db.refresh(novo_usuario)
+    return novo_usuario
+
+@app.post("/login/")
+def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(database.get_db)):
+    # Busca o usuário
+    usuario = db.query(models.Usuario).filter(models.Usuario.username == form_data.username).first()
+    
+    # Confere se o usuário existe e se a senha digitada bate com a do banco
+    if not usuario or not auth.verificar_senha(form_data.password, usuario.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Usuário ou senha incorretos.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    # Gera o Token
+    token_jwt = auth.criar_token_acesso(dados={"sub": usuario.username})
+    return {"access_token": token_jwt, "token_type": "bearer"}
 
 # Rota para salvar uma nova transação
 @app.post("/transacoes/", response_model=schemas.Transacao)
-def criar_transacao(transacao: schemas.TransacaoCreate, db: Session = Depends(get_db)):
-    # Converte os dados validados para o formato do banco
-    nova_transacao = models.Transacao(**transacao.model_dump())
-    
+def criar_transacao(
+    transacao: schemas.TransacaoCreate, 
+    db: Session = Depends(database.get_db),
+    usuario_atual: models.Usuario = Depends(get_usuario_atual)):    
+
     # Salva no banco de dados
+    nova_transacao = models.Transacao(**transacao.model_dump(), usuario_id=usuario_atual.id)
     db.add(nova_transacao)
     db.commit()
-    db.refresh(nova_transacao) # Atualiza para pegar o ID gerado
+    db.refresh(nova_transacao)
     return nova_transacao
 
 # Rota para ler todas as transações 
 @app.get("/transacoes/", response_model=list[schemas.Transacao])
-def listar_transacoes(db: Session = Depends(get_db)):
+def listar_transacoes(
+    db: Session = Depends(database.get_db),
+    usuario_atual: models.Usuario = Depends(get_usuario_atual)):
+
     # Busca tudo o que está salvo na tabela "transacoes"
     transacoes = db.query(models.Transacao).all()
     return transacoes
 
 # Rota para apagar uma transação
 @app.delete("/transacoes/{transacao_id}")
-def apagar_transacao(transacao_id: int, db: Session = Depends(get_db)):
+def apagar_transacao(transacao_id: int, 
+    db: Session = Depends(database.get_db),
+    usuario_atual: models.Usuario = Depends(get_usuario_atual)):
+
     # Procura a transação na base de dados pelo ID
     transacao = db.query(models.Transacao).filter(models.Transacao.id == transacao_id).first()
+    if not transacao:
+        return {"erro": "Transação não encontrada."}
     
+    if transacao.usuario_id != usuario_atual.id:
+        raise HTTPException(status_code=403, detail="Você não tem permissão para apagar este registro.")
     # Se encontrar, apaga e guarda a alteração
-    if transacao:
-        db.delete(transacao)
-        db.commit()
-        return {"mensagem": "Registo eliminado com sucesso!"}
-    
-    return {"erro": "Transação não encontrada."}
+
+    db.delete(transacao)
+    db.commit()
+    return {"mensagem": "Registro eliminado com sucesso!"}

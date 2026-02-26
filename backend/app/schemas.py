@@ -7,6 +7,7 @@ class TransacaoBase(BaseModel):
     categoria: str
     descricao: str
     valor: float
+    responsavel: str
 
 # Schema utilizado para a validação de dados na criação de novas transações (Payload do POST)
 class TransacaoCreate(TransacaoBase):
@@ -17,6 +18,20 @@ class TransacaoCreate(TransacaoBase):
 class Transacao(TransacaoBase):
     id: int
     data: datetime
+    usuario_id: int
 
     class Config:
         from_attributes = True  # Permite que o Pydantic leia dados do SQLAlchemy
+
+# O que o React vai enviar para cadastrar/logar
+class UsuarioCreate(BaseModel):
+    username: str
+    password: str
+
+# O que a API devolve
+class Usuario(BaseModel):
+    id: int
+    username: str
+
+    class Config:
+        from_attributes = True
