@@ -279,7 +279,7 @@ function App() {
               <tbody>
                 {transacoes.map((item) => (
                   <tr key={item.id} className="hover:bg-gray-50">
-                    <td className="py-2 px-4 border-b text-sm text-gray-700">#{item.id}</td>
+                    <td className="py-2 px-4 border-b text-sm text-gray-700">{item.id}</td>
                     <td className="py-2 px-4 border-b text-sm">
                       <span className={`px-2 py-1 rounded text-xs font-bold ${item.tipo === 'Entrada' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                         {item.tipo}
@@ -293,11 +293,9 @@ function App() {
                     <td className="py-2 px-4 border-b text-center">
                       <button 
                         onClick={() => eliminarTransacao(item.id)}
-                        className="text-red-500 hover:text-red-700 font-bold px-2 py-1 rounded hover:bg-red-50 transition"
-                      >
+                        className="text-red-500 hover:text-red-700 font-bold px-2 py-1 rounded hover:bg-red-50 transition">
                         🗑️
                       </button>
-                      <td className="py-2 px-4 border-b text-sm font-medium text-gray-700">{item.responsavel}</td>
                     </td>
                   </tr>
                 ))}

@@ -7,7 +7,6 @@ class TransacaoBase(BaseModel):
     categoria: str
     descricao: str
     valor: float
-    responsavel: str
 
 # Schema utilizado para a validação de dados na criação de novas transações (Payload do POST)
 class TransacaoCreate(TransacaoBase):
