@@ -98,35 +98,35 @@ function App() {
 
   // Função para submeter os dados do formulário ao backend (POST)
   const salvarTransacao = (evento) => {
-      evento.preventDefault() 
+    evento.preventDefault() 
 
-      const novaTransacao = {
-        tipo: tipo,
-        categoria: categoria,
-        descricao: descricao,
-        valor: parseFloat(valor)
-      }
-
-      fetch('http://127.0.0.1:8000/transacoes/', {
-        method: 'POST',
-        headers: { 
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(novaTransacao)
-      })
-      .then(resposta => resposta.json())
-      .then(() => {
-        // Reset dos campos e revalidação da lista após sucesso
-        setDescricao('')
-        setValor('')
-        buscarTransacoes()
-      })
-      .catch(erro => console.error("Erro na requisição POST:", erro))
+    const novaTransacao = {
+      tipo: tipo,
+      categoria: categoria,
+      descricao: descricao,
+      valor: parseFloat(valor)
     }
 
-    // Função para deletar um registro específico por ID (DELETE)
-    const eliminarTransacao = (id) => {
+    fetch('http://127.0.0.1:8000/transacoes/', {
+      method: 'POST',
+      headers: { 
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(novaTransacao)
+    })
+    .then(resposta => resposta.json())
+    .then(() => {
+      // Reset dos campos e revalidação da lista após sucesso
+      setDescricao('')
+      setValor('')
+      buscarTransacoes()
+    })
+    .catch(erro => console.error("Erro na requisição POST:", erro))
+  }
+
+  // Função para deletar um registro específico por ID (DELETE)
+  const eliminarTransacao = (id) => {
     if (window.confirm("Tem a certeza que deseja eliminar este registo?")) {
       fetch(`http://127.0.0.1:8000/transacoes/${id}`, {
         method: 'DELETE',
@@ -141,6 +141,26 @@ function App() {
       })
       .catch(erro => console.error("Erro na requisição DELETE:", erro))
     }
+  }
+
+  const baixarRelatorio = () => {
+    fetch('http://127.0.0.1:8000/relatorio/', {
+      headers: { 'Authorization': `Bearer ${token}` } 
+    })
+    .then(resposta => {
+      if (!resposta.ok) throw new Error("Erro ao gerar PDF")
+      return resposta.blob() // Transforma a resposta num ficheiro binário
+    })
+    .then(blob => {
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', 'relatorio_sinuca.pdf')
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+    })
+    .catch(erro => alert(erro.message))
   }
 
   // Cálculos derivados baseados no estado 'transacoes' (Memória do Cliente)
@@ -263,12 +283,19 @@ function App() {
           {/* Tabela de listagem de dados históricos */}
           <div className="mb-4">
             <h2 className="text-xl font-semibold text-gray-700">Histórico de Transações</h2>
+            <button 
+            onClick={baixarRelatorio} 
+            className="bg-gray-800 hover:bg-black text-white font-bold py-2 px-4 rounded flex items-center gap-2 transition"
+            >
+              📄 Baixar Relatório PDF
+            </button>
           </div>
           <div className="overflow-x-auto">
             <table className="min-w-full bg-white border border-gray-200">
               <thead className="bg-gray-50">
                 <tr>
                   <th className="py-2 px-4 border-b text-left text-sm font-medium text-gray-600">ID</th>
+                  <th className="py-2 px-4 border-b text-left text-sm font-medium text-gray-600">Data/Hora</th>
                   <th className="py-2 px-4 border-b text-left text-sm font-medium text-gray-600">Tipo</th>
                   <th className="py-2 px-4 border-b text-left text-sm font-medium text-gray-600">Categoria</th>
                   <th className="py-2 px-4 border-b text-left text-sm font-medium text-gray-600">Descrição</th>
@@ -280,6 +307,9 @@ function App() {
                 {transacoes.map((item) => (
                   <tr key={item.id} className="hover:bg-gray-50">
                     <td className="py-2 px-4 border-b text-sm text-gray-700">{item.id}</td>
+                    <td className="py-2 px-4 border-b text-sm text-gray-700">
+                      {new Date(item.data_criacao).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}
+                    </td>
                     <td className="py-2 px-4 border-b text-sm">
                       <span className={`px-2 py-1 rounded text-xs font-bold ${item.tipo === 'Entrada' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                         {item.tipo}
