@@ -21,6 +21,6 @@ class Transacao(Base):
     descricao = Column(String)               
     valor = Column(Float)
     responsavel = Column(String)                    
-    data = Column(DateTime, default=datetime.utcnow) 
+    data_criacao = Column(DateTime, default=datetime.now)
     usuario_id = Column(Integer, ForeignKey("usuarios.id"))
     dono = relationship("Usuario", back_populates="transacoes")

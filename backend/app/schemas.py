@@ -16,7 +16,7 @@ class TransacaoCreate(TransacaoBase):
 # Inclui os campos 'id' e 'data', que são gerados automaticamente pelo banco de dados
 class Transacao(TransacaoBase):
     id: int
-    data: datetime
+    data_criacao: datetime
     usuario_id: int
 
     class Config:

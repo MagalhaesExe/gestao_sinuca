@@ -4,6 +4,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
 from typing import List
+from fastapi.responses import StreamingResponse
+import io
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import A4
 
 from . import models, schemas, database, auth
 
@@ -120,3 +124,86 @@ def apagar_transacao(transacao_id: int,
     db.delete(transacao)
     db.commit()
     return {"mensagem": "Registro eliminado com sucesso!"}
+
+# Rota de relatório PDF
+@app.get("/relatorio/")
+def gerar_relatorio_pdf(
+    db: Session = Depends(database.get_db),
+    usuario_atual: models.Usuario = Depends(get_usuario_atual)
+):
+    transacoes = db.query(models.Transacao).all()
+    
+    # Cria um ficheiro PDF na memória (buffer)
+    buffer = io.BytesIO()
+    c = canvas.Canvas(buffer, pagesize=A4)
+    largura, altura = A4
+    
+    # Cabeçalho do PDF
+    c.setFont("Helvetica-Bold", 16)
+    c.drawString(160, altura - 50, "Relatório Financeiro - Gestão Sinuca")
+    
+    c.setFont("Helvetica", 10)
+    c.drawString(40, altura - 80, f"Gerado por: {usuario_atual.username}")
+    
+    # Cabeçalho da Tabela
+    y = altura - 120 
+    c.setFont("Helvetica-Bold", 10)
+    c.drawString(40, y, "ID")
+    c.drawString(80, y, "Data/Hora")
+    c.drawString(180, y, "Tipo")
+    c.drawString(240, y, "Categoria")
+    c.drawString(320, y, "Descrição")
+    c.drawString(480, y, "Valor (R$)")
+    
+    c.line(40, y - 5, largura - 40, y - 5)
+    
+    # Preenchimento dos dados
+    y -= 25
+    c.setFont("Helvetica", 9)
+    
+    total_entradas = 0
+    total_saidas = 0
+    
+    for t in transacoes:
+        if t.tipo == 'Entrada':
+            total_entradas += t.valor
+        else:
+            total_saidas += t.valor
+
+        data_formatada = t.data_criacao.strftime("%d/%m/%Y %H:%M") if t.data_criacao else ""
+            
+        c.drawString(40, y, f"{t.id}")
+        c.drawString(80, y, data_formatada)
+        c.drawString(180, y, t.tipo)
+        c.drawString(240, y, t.categoria)
+        c.drawString(320, y, t.descricao[:20]) 
+        c.drawString(480, y, f"{t.valor:.2f}")
+        
+        y -= 20
+        
+        if y < 100:
+            c.showPage()
+            c.setFont("Helvetica", 9)
+            y = altura - 50
+            
+    # Rodapé com os Totais
+    c.line(40, y, largura - 40, y)
+    y -= 25
+    
+    lucro = total_entradas - total_saidas
+    
+    c.setFont("Helvetica-Bold", 12)
+    c.drawString(50, y, f"Total de Entradas: R$ {total_entradas:.2f}")
+    y -= 20
+    c.drawString(50, y, f"Total de Saídas: R$ {total_saidas:.2f}")
+    y -= 20
+    c.drawString(50, y, f"Lucro do Período: R$ {lucro:.2f}")
+    
+    c.save()
+    buffer.seek(0)
+    
+    return StreamingResponse(
+        buffer, 
+        media_type="application/pdf", 
+        headers={"Content-Disposition": "attachment; filename=relatorio_sinuca.pdf"}
+    )
