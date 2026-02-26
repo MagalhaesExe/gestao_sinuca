@@ -1,6 +1,11 @@
 import { useState, useEffect } from 'react'
 
 function App() {
+  // Estados de Autenticação
+  const [token, setToken] = useState(localStorage.getItem('token') || '')
+  const [usernameInput, setUsernameInput] = useState('')
+  const [passwordInput, setPasswordInput] = useState('')
+  const [modoCadastro, setModoCadastro] = useState(false)
   // Estados para armazenamento dos dados da API e controle do formulário
   const [transacoes, setTransacoes] = useState([])
   const [tipo, setTipo] = useState('Entrada')
@@ -8,18 +13,88 @@ function App() {
   const [descricao, setDescricao] = useState('')
   const [valor, setValor] = useState('')
 
-  // Função para buscar a lista de transações do backend (GET)
-  const buscarTransacoes = () => {
-    fetch('http://127.0.0.1:8000/transacoes/')
-      .then(resposta => resposta.json())
-      .then(dados => setTransacoes(dados))
-      .catch(erro => console.error("Erro na requisição GET:", erro))
+  // Efeito: Toda vez que o token mudar, se ele existir, busca as transações
+  useEffect(() => {
+    if (token) {
+      buscarTransacoes()
+    }
+  }, [token])
+
+  const fazerLogin = (evento) => {
+    evento.preventDefault()
+    
+    // O FastAPI com OAuth2 espera receber os dados como formulário padrão (URL Encoded)
+    const formData = new URLSearchParams()
+    formData.append('username', usernameInput)
+    formData.append('password', passwordInput)
+
+    fetch('http://127.0.0.1:8000/login/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: formData
+    })
+    .then(resposta => {
+      if (!resposta.ok) throw new Error("Usuário ou senha inválidos")
+      return resposta.json()
+    })
+    .then(dados => {
+      // Guarda o token no estado e na memória do navegador para não deslogar ao atualizar a página
+      setToken(dados.access_token)
+      localStorage.setItem('token', dados.access_token)
+      setUsernameInput('')
+      setPasswordInput('')
+    })
+    .catch(erro => alert(erro.message))
   }
 
-  // Hook useEffect para carregar os dados assim que o componente for montado
-  useEffect(() => {
-    buscarTransacoes()
-  }, [])
+  const fazerCadastro = (evento) => {
+    evento.preventDefault()
+
+    const novoUsuario = {
+      username: usernameInput,
+      password: passwordInput
+    }
+
+    fetch('http://127.0.0.1:8000/usuarios/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(novoUsuario)
+    })
+    .then(resposta => {
+      if (!resposta.ok) throw new Error("Erro ao cadastrar. Este usuário já existe.")
+      return resposta.json()
+    })
+    .then(() => {
+      alert("Cadastro realizado com sucesso! Agora você pode fazer o login.")
+      // Limpa a senha e volta para a tela de login
+      setPasswordInput('')
+      setModoCadastro(false) 
+    })
+    .catch(erro => alert(erro.message))
+  }
+
+  const fazerLogout = () => {
+    setToken('')
+    localStorage.removeItem('token')
+    setTransacoes([])
+  }
+
+  // Função para buscar a lista de transações do backend (GET)
+  const buscarTransacoes = () => {
+    fetch('http://127.0.0.1:8000/transacoes/', {
+      // Mostrando o Token para o Python!
+      headers: { 'Authorization': `Bearer ${token}` } 
+    })
+      .then(resposta => {
+        if (!resposta.ok) {
+          if (resposta.status === 401) fazerLogout() // Se o token expirou, desloga
+          throw new Error("Erro ao buscar dados")
+        }
+        return resposta.json()
+      })
+      .then(dados => setTransacoes(dados))
+      .catch(erro => console.error(erro))
+  }
 
   // Função para submeter os dados do formulário ao backend (POST)
   const salvarTransacao = (evento) => {
@@ -29,12 +104,15 @@ function App() {
         tipo: tipo,
         categoria: categoria,
         descricao: descricao,
-        valor: parseFloat(valor) 
+        valor: parseFloat(valor)
       }
 
       fetch('http://127.0.0.1:8000/transacoes/', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify(novaTransacao)
       })
       .then(resposta => resposta.json())
@@ -51,34 +129,79 @@ function App() {
     const eliminarTransacao = (id) => {
     if (window.confirm("Tem a certeza que deseja eliminar este registo?")) {
       fetch(`http://127.0.0.1:8000/transacoes/${id}`, {
-        method: 'DELETE' 
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
       })
-      .then(() => {
-        // Atualiza o estado local buscando os dados atualizados
+      .then(resposta => {
+        if (!resposta.ok) {
+          alert("Erro: Você só pode apagar os registros que você mesmo criou!")
+          throw new Error("Sem permissão")
+        }
         buscarTransacoes()
       })
       .catch(erro => console.error("Erro na requisição DELETE:", erro))
     }
   }
 
-    // Cálculos derivados baseados no estado 'transacoes' (Memória do Cliente)
-    const totalEntradas = transacoes
-      .filter(item => item.tipo === 'Entrada')
-      .reduce((acumulador, item) => acumulador + item.valor, 0)
+  // Cálculos derivados baseados no estado 'transacoes' (Memória do Cliente)
+  const totalEntradas = transacoes
+    .filter(item => item.tipo === 'Entrada')
+    .reduce((acumulador, item) => acumulador + item.valor, 0)
 
-    const totalSaidas = transacoes
-      .filter(item => item.tipo.includes('Saída') || item.tipo.includes('Saida'))
-      .reduce((acumulador, item) => acumulador + item.valor, 0)
+  const totalSaidas = transacoes
+    .filter(item => item.tipo.includes('Saída') || item.tipo.includes('Saida'))
+    .reduce((acumulador, item) => acumulador + item.valor, 0)
 
-    const lucro = totalEntradas - totalSaidas
+  const lucro = totalEntradas - totalSaidas
+
+  if (!token) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-white p-8 rounded-lg shadow-md">
+          <h1 className="text-2xl font-bold text-center text-gray-800 mb-6">
+            {modoCadastro ? '🎱 Cadastro de Usuário' : '🎱 Login Gestão Sinuca'}
+          </h1>
+          
+          <form onSubmit={modoCadastro ? fazerCadastro : fazerLogin} className="space-y-4">
+            <div>
+              <label className="block text-sm text-gray-600 mb-1">Usuário</label>
+              <input type="text" required value={usernameInput} onChange={(e) => setUsernameInput(e.target.value)} className="w-full p-2 border rounded" placeholder="Seu nome de usuário" />
+            </div>
+            <div>
+              <label className="block text-sm text-gray-600 mb-1">Senha</label>
+              <input type="password" required value={passwordInput} onChange={(e) => setPasswordInput(e.target.value)} className="w-full p-2 border rounded" placeholder="*****" />
+            </div>
+            <button type="submit" className={`w-full font-bold py-2 px-4 rounded transition text-white ${modoCadastro ? 'bg-green-600 hover:bg-green-700' : 'bg-blue-600 hover:bg-blue-700'}`}>
+              {modoCadastro ? 'Cadastrar Novo Usuário' : 'Entrar'}
+            </button>
+          </form>
+
+          {/* Botão para alternar entre as telas */}
+          <div className="mt-6 text-center">
+            <button 
+              onClick={() => setModoCadastro(!modoCadastro)} 
+              className="text-sm text-gray-500 hover:text-blue-600 transition"
+            >
+              {modoCadastro ? 'Já possui uma conta? Faça Login' : 'Não tem conta? Cadastre-se aqui'}
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
       <div className="min-h-screen bg-gray-100 p-8">
         <div className="max-w-5xl mx-auto bg-white p-6 rounded-lg shadow-md">
           
-          <h1 className="text-3xl font-bold text-gray-800 mb-6 border-b pb-4">
-            🎱 Gestão de Sinuca
-          </h1>
+          <div className="flex justify-between items-center mb-6 border-b pb-4">
+            <h1 className="text-3xl font-bold text-gray-800">
+              🎱 Gestão de Sinuca
+            </h1>
+            <button onClick={fazerLogout} className="bg-red-500 hover:bg-red-600 text-white font-semibold py-1 px-4 rounded transition">
+              Sair
+            </button>
+          </div>
 
           {/* Seção de indicadores financeiros (Dashboard) */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -174,6 +297,7 @@ function App() {
                       >
                         🗑️
                       </button>
+                      <td className="py-2 px-4 border-b text-sm font-medium text-gray-700">{item.responsavel}</td>
                     </td>
                   </tr>
                 ))}
