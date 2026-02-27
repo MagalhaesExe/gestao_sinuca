@@ -264,44 +264,12 @@ function App() {
       <div className="min-h-screen bg-gray-100 p-8">
         <div className="max-w-5xl mx-auto bg-white p-6 rounded-lg shadow-md">
           
-          <div className="flex justify-between items-center mb-6 border-b pb-4">
-            <img src="/logo.jpg" alt="Logo Sinuca Magalhães" className="h-16 object-contain" />
-            <h1 className="text-3xl font-bold text-gray-800">
-              Sinuca Magalhães
-            </h1>
-            <div className="flex items-center gap-2 bg-gray-50 px-3 py-2 rounded border shadow-sm">
-              <span className="text-sm font-semibold text-gray-600">Filtro:</span>
-              <select 
-                value={tipoFiltro} 
-                onChange={(e) => setTipoFiltro(e.target.value)}
-                className="text-sm border-gray-300 rounded p-1 outline-none"
-              >
-                <option value="tudo">Todo o Histórico</option>
-                <option value="hoje">Hoje</option>
-                <option value="7dias">Últimos 7 dias</option>
-                <option value="15dias">Últimos 15 dias</option>
-                <option value="mes_atual">Mês Atual</option>
-                <option value="personalizado">Personalizado...</option>
-              </select>
-
-              {/* Só mostra os campos de data se for "Personalizado" ou se quiserem ver os dias aplicados */}
-              {tipoFiltro === 'personalizado' && (
-                <div className="flex items-center gap-2 ml-2 border-l pl-2">
-                  <input 
-                    type="date" 
-                    value={dataInicio} 
-                    onChange={(e) => setDataInicio(e.target.value)}
-                    className="text-sm p-1 rounded border outline-none"
-                  />
-                  <span className="text-xs text-gray-500">até</span>
-                  <input 
-                    type="date" 
-                    value={dataFim} 
-                    onChange={(e) => setDataFim(e.target.value)}
-                    className="text-sm p-1 rounded border outline-none"
-                  />
-                </div>
-              )}
+          <div className="relative flex justify-between items-center mb-6 border-b pb-4">
+            <div className="flex items-center gap-4">
+              <img src="/logo.jpg" alt="Logo Sinuca Magalhães" className="h-24 object-contain" />
+              <h1 className="absolute left-1/2 transform -translate-x-1/2 text-3xl font-bold text-gray-800 w-full text-center pointer-events-none hidden md:block">
+                Gerenciamento de Finanças
+              </h1>
             </div>
             <button onClick={fazerLogout} className="bg-red-500 hover:bg-red-600 text-white font-semibold py-1 px-4 rounded transition">
               Sair
@@ -365,16 +333,54 @@ function App() {
             </form>
           </div>
 
-          {/* Tabela de listagem de dados históricos */}
-          <div className="mb-4">
+          {/* BARRA DE HISTÓRICO, FILTRO E PDF */}
+          <div className="mb-4 flex flex-col md:flex-row justify-between items-center gap-4 bg-gray-50 p-3 rounded border border-gray-200">
             <h2 className="text-xl font-semibold text-gray-700">Histórico de Transações</h2>
-            <button 
-            onClick={baixarRelatorio} 
-            className="bg-gray-800 hover:bg-black text-white font-bold py-2 px-4 rounded flex items-center gap-2 transition"
-            >
-              📄 Baixar Relatório PDF
-            </button>
+            
+            <div className="flex items-center gap-4 flex-wrap justify-end">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-semibold text-gray-600">Filtro:</span>
+                <select 
+                  value={tipoFiltro} 
+                  onChange={(e) => setTipoFiltro(e.target.value)}
+                  className="text-sm border-gray-300 rounded p-1 outline-none"
+                >
+                  <option value="tudo">Todo o Histórico</option>
+                  <option value="hoje">Hoje</option>
+                  <option value="7dias">Últimos 7 dias</option>
+                  <option value="15dias">Últimos 15 dias</option>
+                  <option value="mes_atual">Mês Atual</option>
+                  <option value="personalizado">Personalizado...</option>
+                </select>
+
+                {tipoFiltro === 'personalizado' && (
+                  <div className="flex items-center gap-2 ml-2 border-l border-gray-300 pl-2">
+                    <input 
+                      type="date" 
+                      value={dataInicio} 
+                      onChange={(e) => setDataInicio(e.target.value)}
+                      className="text-sm p-1 rounded border outline-none"
+                    />
+                    <span className="text-xs text-gray-500">até</span>
+                    <input 
+                      type="date" 
+                      value={dataFim} 
+                      onChange={(e) => setDataFim(e.target.value)}
+                      className="text-sm p-1 rounded border outline-none"
+                    />
+                  </div>
+                )}
+              </div>
+              <button 
+                onClick={baixarRelatorio} 
+                className="bg-gray-800 hover:bg-black text-white font-bold py-2 px-4 rounded flex items-center gap-2 transition"
+              >
+                Baixar Relatório PDF
+              </button>
+            </div>
           </div>
+
+          {/* Tabela de listagem de dados históricos */}
           <div className="overflow-x-auto">
             <table className="min-w-full bg-white border border-gray-200">
               <thead className="bg-gray-50">
@@ -409,7 +415,7 @@ function App() {
                       <button 
                         onClick={() => eliminarTransacao(item.id)}
                         className="text-red-500 hover:text-red-700 font-bold px-2 py-1 rounded hover:bg-red-50 transition">
-                        🗑️
+                        Excluir
                       </button>
                     </td>
                   </tr>
