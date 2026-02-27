@@ -261,36 +261,41 @@ function App() {
   }
 
   return (
-      <div className="min-h-screen bg-gray-100 p-8">
-        <div className="max-w-5xl mx-auto bg-white p-6 rounded-lg shadow-md">
+      <div className="min-h-screen bg-gray-100 p-3 md:p-8">
+        <div className="max-w-5xl mx-auto bg-white p-4 md:p-6 rounded-lg shadow-md">
           
           <div className="relative flex justify-between items-center mb-6 border-b pb-4">
-            <div className="flex items-center gap-4">
-              <img src="/logo.jpg" alt="Logo Sinuca Magalhães" className="h-24 object-contain" />
-              <h1 className="absolute left-1/2 transform -translate-x-1/2 text-3xl font-bold text-gray-800 w-full text-center pointer-events-none hidden md:block">
+            <div className="flex items-center gap-2 md:gap-4">
+              <img src="/logo.jpg" alt="Logo Sinuca Magalhães" className="h-12 md:h-24 object-contain" />
+              <h1 className="absolute left-1/2 transform -translate-x-1/2 text-2xl md:text-3xl font-bold text-gray-800 w-full text-center pointer-events-none hidden md:block">
                 Gerenciamento de Finanças
               </h1>
             </div>
-            <button onClick={fazerLogout} className="bg-red-500 hover:bg-red-600 text-white font-semibold py-1 px-4 rounded transition">
+            <button onClick={fazerLogout} className="bg-red-500 hover:bg-red-600 text-white font-semibold py-1.5 px-3 md:py-2 md:px-4 rounded transition text-sm md:text-base">
               Sair
             </button>
           </div>
 
+          {/* Título alternativo para o celular */}
+          <h1 className="text-xl font-bold text-gray-800 text-center mb-6 block md:hidden">
+            Sinuca Magalhães
+          </h1>
+
           {/* Seção de indicadores financeiros (Dashboard) */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-8">
             <div className="bg-green-50 border-l-4 border-green-500 p-4 rounded shadow-sm">
               <p className="text-sm text-green-600 font-semibold mb-1">Total de Entradas</p>
-              <p className="text-2xl font-bold text-green-700">R$ {totalEntradas.toFixed(2)}</p>
+              <p className="text-xl md:text-2xl font-bold text-green-700">R$ {totalEntradas.toFixed(2)}</p>
             </div>
 
             <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded shadow-sm">
               <p className="text-sm text-red-600 font-semibold mb-1">Total de Saídas</p>
-              <p className="text-2xl font-bold text-red-700">R$ {totalSaidas.toFixed(2)}</p>
+              <p className="text-xl md:text-2xl font-bold text-red-700">R$ {totalSaidas.toFixed(2)}</p>
             </div>
 
             <div className={`${lucro >= 0 ? 'bg-blue-50 border-blue-500 text-blue-700' : 'bg-orange-50 border-orange-500 text-orange-700'} border-l-4 p-4 rounded shadow-sm`}>
               <p className="text-sm font-semibold mb-1 opacity-80">Lucro Atual</p>
-              <p className="text-2xl font-bold">R$ {lucro.toFixed(2)}</p>
+              <p className="text-xl md:text-2xl font-bold">R$ {lucro.toFixed(2)}</p>
             </div>
           </div>
 
@@ -301,8 +306,8 @@ function App() {
               <div>
                 <label className="block text-sm text-gray-600 mb-1">Tipo</label>
                 <select value={tipo} onChange={(e) => setTipo(e.target.value)} className="w-full p-2 border rounded">
-                  <option value="Entrada">🟢 Entrada (Ganho)</option>
-                  <option value="Saída">🔴 Saída (Gasto)</option>
+                  <option value="Entrada">Entrada (Ganho)</option>
+                  <option value="Saída">Saída (Gasto)</option>
                 </select>
               </div>
               <div>
@@ -325,7 +330,7 @@ function App() {
                 <label className="block text-sm text-gray-600 mb-1">Valor (R$)</label>
                 <input type="number" step="0.01" required placeholder="0.00" value={valor} onChange={(e) => setValor(e.target.value)} className="w-full p-2 border rounded" />
               </div>
-              <div className="md:col-span-5 flex justify-end mt-2">
+              <div className="md:col-span-5 flex justify-center md:justify-end mt-2">
                 <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded transition">
                   Salvar Registro
                 </button>
@@ -334,16 +339,16 @@ function App() {
           </div>
 
           {/* BARRA DE HISTÓRICO, FILTRO E PDF */}
-          <div className="mb-4 flex flex-col md:flex-row justify-between items-center gap-4 bg-gray-50 p-3 rounded border border-gray-200">
-            <h2 className="text-xl font-semibold text-gray-700">Histórico de Transações</h2>
+          <div className="mb-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-gray-50 p-3 md:p-4 rounded border border-gray-200">
+            <h2 className="text-lg md:text-xl font-semibold text-gray-700 w-full md:w-auto text-center md:text-left">Histórico de Transações</h2>
             
-            <div className="flex items-center gap-4 flex-wrap justify-end">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-semibold text-gray-600">Filtro:</span>
+            <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
+              <div className="flex flex-col md:flex-row items-center gap-2 w-full md:w-auto">
+                <span className="text-sm font-semibold text-gray-600 hidden md:inline">Filtro:</span>
                 <select 
                   value={tipoFiltro} 
                   onChange={(e) => setTipoFiltro(e.target.value)}
-                  className="text-sm border-gray-300 rounded p-1 outline-none"
+                  className="w-full md:w-auto text-sm border-gray-300 rounded p-2 outline-none bg-white"
                 >
                   <option value="tudo">Todo o Histórico</option>
                   <option value="hoje">Hoje</option>
@@ -354,26 +359,26 @@ function App() {
                 </select>
 
                 {tipoFiltro === 'personalizado' && (
-                  <div className="flex items-center gap-2 ml-2 border-l border-gray-300 pl-2">
+                  <div className="flex items-center gap-2 mt-2 md:mt-0 w-full md:w-auto justify-center border-gray-300">
                     <input 
                       type="date" 
                       value={dataInicio} 
                       onChange={(e) => setDataInicio(e.target.value)}
-                      className="text-sm p-1 rounded border outline-none"
+                      className="text-sm p-1.5 rounded border outline-none w-full md:w-auto"
                     />
                     <span className="text-xs text-gray-500">até</span>
                     <input 
                       type="date" 
                       value={dataFim} 
                       onChange={(e) => setDataFim(e.target.value)}
-                      className="text-sm p-1 rounded border outline-none"
+                      className="text-sm p-1.5 rounded border outline-none w-full md:w-auto"
                     />
                   </div>
                 )}
               </div>
               <button 
                 onClick={baixarRelatorio} 
-                className="bg-gray-800 hover:bg-black text-white font-bold py-2 px-4 rounded flex items-center gap-2 transition"
+                className="w-full md:w-auto bg-gray-800 hover:bg-black text-white font-bold py-2 px-4 rounded flex items-center gap-2 transition"
               >
                 Baixar Relatório PDF
               </button>
@@ -381,40 +386,40 @@ function App() {
           </div>
 
           {/* Tabela de listagem de dados históricos */}
-          <div className="overflow-x-auto">
-            <table className="min-w-full bg-white border border-gray-200">
+          <div className="overflow-x-auto border border-gray-200 rounded">
+            <table className="min-w-full bg-white text-sm md:text-base">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="py-2 px-4 border-b text-left text-sm font-medium text-gray-600">ID</th>
-                  <th className="py-2 px-4 border-b text-left text-sm font-medium text-gray-600">Data/Hora</th>
-                  <th className="py-2 px-4 border-b text-left text-sm font-medium text-gray-600">Tipo</th>
-                  <th className="py-2 px-4 border-b text-left text-sm font-medium text-gray-600">Categoria</th>
-                  <th className="py-2 px-4 border-b text-left text-sm font-medium text-gray-600">Descrição</th>
-                  <th className="py-2 px-4 border-b text-left text-sm font-medium text-gray-600">Valor</th>
-                  <th className="py-2 px-4 border-b text-center text-sm font-medium text-gray-600">Ações</th>
+                  <th className="py-2 px-4 border-b text-left text-sm font-medium text-gray-600 whitespace-nowrap">ID</th>
+                  <th className="py-2 px-4 border-b text-left text-sm font-medium text-gray-600 whitespace-nowrap">Data/Hora</th>
+                  <th className="py-2 px-4 border-b text-left text-sm font-medium text-gray-600 whitespace-nowrap">Tipo</th>
+                  <th className="py-2 px-4 border-b text-left text-sm font-medium text-gray-600 whitespace-nowrap">Categoria</th>
+                  <th className="py-2 px-4 border-b text-left text-sm font-medium text-gray-600 whitespace-nowrap">Descrição</th>
+                  <th className="py-2 px-4 border-b text-left text-sm font-medium text-gray-600 whitespace-nowrap">Valor</th>
+                  <th className="py-2 px-4 border-b text-center text-sm font-medium text-gray-600 whitespace-nowrap">Ações</th>
                 </tr>
               </thead>
               <tbody>
                 {transacoes.map((item) => (
                   <tr key={item.id} className="hover:bg-gray-50">
-                    <td className="py-2 px-4 border-b text-sm text-gray-700">{item.id}</td>
-                    <td className="py-2 px-4 border-b text-sm text-gray-700">
+                    <td className="py-3 px-4 border-b text-gray-700 whitespace-nowrap">{item.id}</td>
+                    <td className="py-3 px-4 border-b text-gray-700 whitespace-nowrap">
                       {new Date(item.data_criacao).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}
                     </td>
-                    <td className="py-2 px-4 border-b text-sm">
-                      <span className={`px-2 py-1 rounded text-xs font-bold ${item.tipo === 'Entrada' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                    <td className="py-3 px-4 border-b">
+                      <span className={`px-2 py-1 rounded text-xs font-bold whitespace-nowrap ${item.tipo === 'Entrada' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                         {item.tipo}
                       </span>
                     </td>
-                    <td className="py-2 px-4 border-b text-sm text-gray-700">{item.categoria}</td>
-                    <td className="py-2 px-4 border-b text-sm text-gray-700">{item.descricao}</td>
-                    <td className="py-2 px-4 border-b text-sm font-semibold text-gray-800">
+                    <td className="py-3 px-4 border-b text-sm text-gray-700 whitespace-nowrap">{item.categoria}</td>
+                    <td className="py-3 px-4 border-b text-sm text-gray-700 min-w-37.5">{item.descricao}</td>
+                    <td className="py-3 px-4 border-b text-sm font-semibold text-gray-800 whitespace-nowrap">
                       R$ {item.valor.toFixed(2)}
                     </td>
-                    <td className="py-2 px-4 border-b text-center">
+                    <td className="py-3 px-4 border-b text-center whitespace-nowrap">
                       <button 
                         onClick={() => eliminarTransacao(item.id)}
-                        className="text-red-500 hover:text-red-700 font-bold px-2 py-1 rounded hover:bg-red-50 transition">
+                        className="text-red-500 hover:text-red-700 font-bold px-3 py-1.5 rounded hover:bg-red-50 transition border border-transparent hover:border-red-200">
                         Excluir
                       </button>
                     </td>
@@ -423,7 +428,7 @@ function App() {
               </tbody>
             </table>
             {transacoes.length === 0 && (
-              <p className="text-center text-gray-500 mt-4">Nenhuma transação encontrada.</p>
+              <p className="text-center text-gray-500 mt-4 pb-4">Nenhuma transação encontrada.</p>
             )}
           </div>
         </div>
