@@ -1,5 +1,6 @@
 from fastapi import FastAPI, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+from sqlalchemy import extract
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
@@ -8,6 +9,7 @@ from fastapi.responses import StreamingResponse
 import io
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4
+from datetime import datetime
 
 from . import models, schemas, database, auth
 
@@ -99,12 +101,22 @@ def criar_transacao(
 # Rota para ler todas as transações 
 @app.get("/transacoes/", response_model=list[schemas.Transacao])
 def listar_transacoes(
+    data_inicio: str = None,
+    data_fim: str = None,
     db: Session = Depends(database.get_db),
     usuario_atual: models.Usuario = Depends(get_usuario_atual)):
-
-    # Busca tudo o que está salvo na tabela "transacoes"
-    transacoes = db.query(models.Transacao).all()
-    return transacoes
+    query = db.query(models.Transacao)
+    
+    if data_inicio:
+        inicio_dt = datetime.strptime(data_inicio, "%Y-%m-%d")
+        query = query.filter(models.Transacao.data_criacao >= inicio_dt)
+        
+    # Filtro de Data Final (Menor ou igual) - Adicionamos 23:59:59 para incluir o dia todo
+    if data_fim:
+        fim_dt = datetime.strptime(data_fim, "%Y-%m-%d").replace(hour=23, minute=59, second=59)
+        query = query.filter(models.Transacao.data_criacao <= fim_dt)
+        
+    return query.all()
 
 # Rota para apagar uma transação
 @app.delete("/transacoes/{transacao_id}")
@@ -128,10 +140,20 @@ def apagar_transacao(transacao_id: int,
 # Rota de relatório PDF
 @app.get("/relatorio/")
 def gerar_relatorio_pdf(
+    data_inicio: str = None,
+    data_fim: str = None,
     db: Session = Depends(database.get_db),
     usuario_atual: models.Usuario = Depends(get_usuario_atual)
 ):
-    transacoes = db.query(models.Transacao).all()
+    query = db.query(models.Transacao)
+    if data_inicio:
+        inicio_dt = datetime.strptime(data_inicio, "%Y-%m-%d")
+        query = query.filter(models.Transacao.data_criacao >= inicio_dt)
+    if data_fim:
+        fim_dt = datetime.strptime(data_fim, "%Y-%m-%d").replace(hour=23, minute=59, second=59)
+        query = query.filter(models.Transacao.data_criacao <= fim_dt)
+        
+    transacoes = query.all()
     
     # Cria um ficheiro PDF na memória (buffer)
     buffer = io.BytesIO()
@@ -140,10 +162,18 @@ def gerar_relatorio_pdf(
     
     # Cabeçalho do PDF
     c.setFont("Helvetica-Bold", 16)
-    c.drawString(160, altura - 50, "Relatório Financeiro - Gestão Sinuca")
+    titulo = "Relatório Financeiro"
+    if data_inicio and data_fim:
+        data_i_fmt = datetime.strptime(data_inicio, "%Y-%m-%d").strftime("%d/%m/%Y")
+        data_f_fmt = datetime.strptime(data_fim, "%Y-%m-%d").strftime("%d/%m/%Y")
+        titulo += f" ({data_i_fmt} a {data_f_fmt})"
+    elif data_inicio:
+        titulo += f" (A partir de {datetime.strptime(data_inicio, '%Y-%m-%d').strftime('%d/%m/%Y')})"
+        
+    c.drawString(100, altura - 50, titulo) # Movemos um pouco para a esquerda para caber o título maior
     
     c.setFont("Helvetica", 10)
-    c.drawString(40, altura - 80, f"Gerado por: {usuario_atual.username}")
+    c.drawString(40, altura - 80, f"Gerado por: {usuario_atual.username} em {datetime.now().strftime('%d/%m/%Y %H:%M')}")
     
     # Cabeçalho da Tabela
     y = altura - 120 
