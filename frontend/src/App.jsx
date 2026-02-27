@@ -6,19 +6,52 @@ function App() {
   const [usernameInput, setUsernameInput] = useState('')
   const [passwordInput, setPasswordInput] = useState('')
   const [modoCadastro, setModoCadastro] = useState(false)
+
   // Estados para armazenamento dos dados da API e controle do formulário
   const [transacoes, setTransacoes] = useState([])
   const [tipo, setTipo] = useState('Entrada')
   const [categoria, setCategoria] = useState('Locação')
   const [descricao, setDescricao] = useState('')
   const [valor, setValor] = useState('')
+  const [tipoFiltro, setTipoFiltro] = useState('tudo')
+  const [dataInicio, setDataInicio] = useState('')
+  const [dataFim, setDataFim] = useState('')
+
+  // Calcula as datas automaticamente com base na seleção
+  useEffect(() => {
+    const formatarData = (data) => data.toISOString().split('T')[0];
+    const hoje = new Date();
+
+    if (tipoFiltro === 'tudo') {
+      setDataInicio('');
+      setDataFim('');
+    } else if (tipoFiltro === 'hoje') {
+      setDataInicio(formatarData(hoje));
+      setDataFim(formatarData(hoje));
+    } else if (tipoFiltro === '7dias') {
+      const seteDiasAtras = new Date();
+      seteDiasAtras.setDate(hoje.getDate() - 7);
+      setDataInicio(formatarData(seteDiasAtras));
+      setDataFim(formatarData(hoje));
+    } else if (tipoFiltro === '15dias') {
+      const quinzeDiasAtras = new Date();
+      quinzeDiasAtras.setDate(hoje.getDate() - 15);
+      setDataInicio(formatarData(quinzeDiasAtras));
+      setDataFim(formatarData(hoje));
+    } else if (tipoFiltro === 'mes_atual') {
+      const primeiroDia = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+      const ultimoDia = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0);
+      setDataInicio(formatarData(primeiroDia));
+      setDataFim(formatarData(ultimoDia));
+    }
+  }, [tipoFiltro]);
 
   // Efeito: Toda vez que o token mudar, se ele existir, busca as transações
   useEffect(() => {
     if (token) {
       buscarTransacoes()
     }
-  }, [token])
+  }, [token, dataInicio, dataFim])
 
   const fazerLogin = (evento) => {
     evento.preventDefault()
@@ -81,13 +114,21 @@ function App() {
 
   // Função para buscar a lista de transações do backend (GET)
   const buscarTransacoes = () => {
-    fetch('http://127.0.0.1:8000/transacoes/', {
-      // Mostrando o Token para o Python!
+    let url = 'http://127.0.0.1:8000/transacoes/'
+    
+    // Se o utilizador escolheu um mês, adiciona na URL
+    if (dataInicio || dataFim) {
+      url += `?`
+      if (dataInicio) url += `data_inicio=${dataInicio}&`
+      if (dataFim) url += `data_fim=${dataFim}`
+    }
+
+    fetch(url, {
       headers: { 'Authorization': `Bearer ${token}` } 
     })
       .then(resposta => {
         if (!resposta.ok) {
-          if (resposta.status === 401) fazerLogout() // Se o token expirou, desloga
+          if (resposta.status === 401) fazerLogout() 
           throw new Error("Erro ao buscar dados")
         }
         return resposta.json()
@@ -144,17 +185,26 @@ function App() {
   }
 
   const baixarRelatorio = () => {
-    fetch('http://127.0.0.1:8000/relatorio/', {
+    let url = 'http://127.0.0.1:8000/relatorio/'
+    
+    // Aplica o mesmo filtro para o PDF
+    if (dataInicio || dataFim) {
+      url += `?`
+      if (dataInicio) url += `data_inicio=${dataInicio}&`
+      if (dataFim) url += `data_fim=${dataFim}`
+    }
+
+    fetch(url, {
       headers: { 'Authorization': `Bearer ${token}` } 
     })
     .then(resposta => {
       if (!resposta.ok) throw new Error("Erro ao gerar PDF")
-      return resposta.blob() // Transforma a resposta num ficheiro binário
+      return resposta.blob() 
     })
     .then(blob => {
-      const url = window.URL.createObjectURL(blob)
+      const urlBlob = window.URL.createObjectURL(blob)
       const link = document.createElement('a')
-      link.href = url
+      link.href = urlBlob
       link.setAttribute('download', 'relatorio_sinuca.pdf')
       document.body.appendChild(link)
       link.click()
@@ -218,6 +268,40 @@ function App() {
             <h1 className="text-3xl font-bold text-gray-800">
               🎱 Gestão de Sinuca
             </h1>
+<div className="flex items-center gap-2 bg-gray-50 px-3 py-2 rounded border shadow-sm">
+              <span className="text-sm font-semibold text-gray-600">Filtro:</span>
+              <select 
+                value={tipoFiltro} 
+                onChange={(e) => setTipoFiltro(e.target.value)}
+                className="text-sm border-gray-300 rounded p-1 outline-none"
+              >
+                <option value="tudo">Todo o Histórico</option>
+                <option value="hoje">Hoje</option>
+                <option value="7dias">Últimos 7 dias</option>
+                <option value="15dias">Últimos 15 dias</option>
+                <option value="mes_atual">Mês Atual</option>
+                <option value="personalizado">Personalizado...</option>
+              </select>
+
+              {/* Só mostra os campos de data se for "Personalizado" ou se quiserem ver os dias aplicados */}
+              {tipoFiltro === 'personalizado' && (
+                <div className="flex items-center gap-2 ml-2 border-l pl-2">
+                  <input 
+                    type="date" 
+                    value={dataInicio} 
+                    onChange={(e) => setDataInicio(e.target.value)}
+                    className="text-sm p-1 rounded border outline-none"
+                  />
+                  <span className="text-xs text-gray-500">até</span>
+                  <input 
+                    type="date" 
+                    value={dataFim} 
+                    onChange={(e) => setDataFim(e.target.value)}
+                    className="text-sm p-1 rounded border outline-none"
+                  />
+                </div>
+              )}
+            </div>
             <button onClick={fazerLogout} className="bg-red-500 hover:bg-red-600 text-white font-semibold py-1 px-4 rounded transition">
               Sair
             </button>
