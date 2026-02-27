@@ -229,7 +229,7 @@ function App() {
       <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
         <div className="max-w-md w-full bg-white p-8 rounded-lg shadow-md">
           <h1 className="text-2xl font-bold text-center text-gray-800 mb-6">
-            {modoCadastro ? '🎱 Cadastro de Usuário' : '🎱 Login Gestão Sinuca'}
+            {modoCadastro ? 'Cadastro de Usuário' : 'Login'}
           </h1>
           
           <form onSubmit={modoCadastro ? fazerCadastro : fazerLogin} className="space-y-4">
@@ -265,10 +265,11 @@ function App() {
         <div className="max-w-5xl mx-auto bg-white p-6 rounded-lg shadow-md">
           
           <div className="flex justify-between items-center mb-6 border-b pb-4">
+            <img src="/logo.jpg" alt="Logo Sinuca Magalhães" className="h-16 object-contain" />
             <h1 className="text-3xl font-bold text-gray-800">
-              🎱 Gestão de Sinuca
+              Sinuca Magalhães
             </h1>
-<div className="flex items-center gap-2 bg-gray-50 px-3 py-2 rounded border shadow-sm">
+            <div className="flex items-center gap-2 bg-gray-50 px-3 py-2 rounded border shadow-sm">
               <span className="text-sm font-semibold text-gray-600">Filtro:</span>
               <select 
                 value={tipoFiltro} 
