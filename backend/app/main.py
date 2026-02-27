@@ -1,3 +1,5 @@
+import os
+from fastapi.responses import StreamingResponse
 from fastapi import FastAPI, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy import extract
@@ -161,8 +163,13 @@ def gerar_relatorio_pdf(
     largura, altura = A4
     
     # Cabeçalho do PDF
+    caminho_logo = "logo.jpg" 
+    if os.path.exists(caminho_logo):
+        # Desenha a logo no canto superior esquerdo
+        c.drawImage(caminho_logo, largura - 170, altura - 100, width=130, height=100, preserveAspectRatio=True, mask='auto')
+
     c.setFont("Helvetica-Bold", 16)
-    titulo = "Relatório Financeiro"
+    titulo = "Relatório Financeiro - Sinuca Magalhães"
     if data_inicio and data_fim:
         data_i_fmt = datetime.strptime(data_inicio, "%Y-%m-%d").strftime("%d/%m/%Y")
         data_f_fmt = datetime.strptime(data_fim, "%Y-%m-%d").strftime("%d/%m/%Y")
@@ -170,20 +177,20 @@ def gerar_relatorio_pdf(
     elif data_inicio:
         titulo += f" (A partir de {datetime.strptime(data_inicio, '%Y-%m-%d').strftime('%d/%m/%Y')})"
         
-    c.drawString(100, altura - 50, titulo) # Movemos um pouco para a esquerda para caber o título maior
+    c.drawString(40, altura - 50, titulo)
     
     c.setFont("Helvetica", 10)
-    c.drawString(40, altura - 80, f"Gerado por: {usuario_atual.username} em {datetime.now().strftime('%d/%m/%Y %H:%M')}")
+    c.drawString(40, altura - 70, f"Gerado por: {usuario_atual.username} em {datetime.now().strftime('%d/%m/%Y %H:%M')}")
     
     # Cabeçalho da Tabela
     y = altura - 120 
     c.setFont("Helvetica-Bold", 10)
     c.drawString(40, y, "ID")
-    c.drawString(80, y, "Data/Hora")
-    c.drawString(180, y, "Tipo")
-    c.drawString(240, y, "Categoria")
+    c.drawString(75, y, "Data/Hora")
+    c.drawString(175, y, "Tipo")
+    c.drawString(230, y, "Categoria")
     c.drawString(320, y, "Descrição")
-    c.drawString(480, y, "Valor (R$)")
+    c.drawString(470, y, "Valor (R$)")
     
     c.line(40, y - 5, largura - 40, y - 5)
     
@@ -203,11 +210,11 @@ def gerar_relatorio_pdf(
         data_formatada = t.data_criacao.strftime("%d/%m/%Y %H:%M") if t.data_criacao else ""
             
         c.drawString(40, y, f"{t.id}")
-        c.drawString(80, y, data_formatada)
-        c.drawString(180, y, t.tipo)
-        c.drawString(240, y, t.categoria)
+        c.drawString(70, y, data_formatada)
+        c.drawString(175, y, t.tipo)
+        c.drawString(230, y, t.categoria)
         c.drawString(320, y, t.descricao[:20]) 
-        c.drawString(480, y, f"{t.valor:.2f}")
+        c.drawString(470, y, f"{t.valor:.2f}")
         
         y -= 20
         
