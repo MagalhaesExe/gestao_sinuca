@@ -107,7 +107,7 @@ def listar_transacoes(
     data_fim: str = None,
     db: Session = Depends(database.get_db),
     usuario_atual: models.Usuario = Depends(get_usuario_atual)):
-    query = db.query(models.Transacao)
+    query = db.query(models.Transacao).filter(models.Transacao.usuario_id == usuario_atual.id)
     
     if data_inicio:
         inicio_dt = datetime.strptime(data_inicio, "%Y-%m-%d")
@@ -127,7 +127,10 @@ def apagar_transacao(transacao_id: int,
     usuario_atual: models.Usuario = Depends(get_usuario_atual)):
 
     # Procura a transação na base de dados pelo ID
-    transacao = db.query(models.Transacao).filter(models.Transacao.id == transacao_id).first()
+    transacao = db.query(models.Transacao).filter(
+        models.Transacao.id == transacao_id, 
+        models.Transacao.usuario_id == usuario_atual.id
+    ).first()
     if not transacao:
         return {"erro": "Transação não encontrada."}
     
@@ -147,7 +150,7 @@ def gerar_relatorio_pdf(
     db: Session = Depends(database.get_db),
     usuario_atual: models.Usuario = Depends(get_usuario_atual)
 ):
-    query = db.query(models.Transacao)
+    query = db.query(models.Transacao).filter(models.Transacao.usuario_id == usuario_atual.id)
     if data_inicio:
         inicio_dt = datetime.strptime(data_inicio, "%Y-%m-%d")
         query = query.filter(models.Transacao.data_criacao >= inicio_dt)
