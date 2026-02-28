@@ -226,22 +226,37 @@ function App() {
 
   if (!token) {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white p-8 rounded-lg shadow-md">
-          <h1 className="text-2xl font-bold text-center text-gray-800 mb-6">
+      <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center p-4">
+        <div className="max-w-md w-full bg-white p-6 md:p-8 rounded-lg shadow-md border border-gray-200">
+          <div className="flex justify-center mb-6">
+            <img src="/logo.jpg" alt="Logo Sinuca Magalhães" className="h-20 md:h-24 object-contain" />
+          </div>
+          <h1 className="text-xl md:text-2xl font-bold text-center text-gray-800 mb-6">
             {modoCadastro ? 'Cadastro de Usuário' : 'Login'}
           </h1>
           
           <form onSubmit={modoCadastro ? fazerCadastro : fazerLogin} className="space-y-4">
             <div>
-              <label className="block text-sm text-gray-600 mb-1">Usuário</label>
-              <input type="text" required value={usernameInput} onChange={(e) => setUsernameInput(e.target.value)} className="w-full p-2 border rounded" placeholder="Seu nome de usuário" />
+              <label className="block text-sm font-medium text-gray-600 mb-1">Usuário</label>
+              <input 
+                type="text" 
+                required value={usernameInput} 
+                onChange={(e) => setUsernameInput(e.target.value)} 
+                className="w-full p-3 border border-gray-300 rounded outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition" 
+                placeholder="Seu nome de usuário" />
             </div>
             <div>
-              <label className="block text-sm text-gray-600 mb-1">Senha</label>
-              <input type="password" required value={passwordInput} onChange={(e) => setPasswordInput(e.target.value)} className="w-full p-2 border rounded" placeholder="*****" />
+              <label className="block text-sm font-medium text-gray-600 mb-1">Senha</label>
+              <input 
+                type="password" 
+                required value={passwordInput} 
+                onChange={(e) => setPasswordInput(e.target.value)} 
+                className="w-full p-3 border border-gray-300 rounded outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition" 
+                placeholder="*****" />
             </div>
-            <button type="submit" className={`w-full font-bold py-2 px-4 rounded transition text-white ${modoCadastro ? 'bg-green-600 hover:bg-green-700' : 'bg-blue-600 hover:bg-blue-700'}`}>
+            <button 
+              type="submit" 
+              className={`w-full font-bold py-3 px-4 rounded transition text-white shadow-sm mt-2 ${modoCadastro ? 'bg-green-600 hover:bg-green-700' : 'bg-blue-600 hover:bg-blue-700'}`}>
               {modoCadastro ? 'Cadastrar Novo Usuário' : 'Entrar'}
             </button>
           </form>
@@ -250,12 +265,15 @@ function App() {
           <div className="mt-6 text-center">
             <button 
               onClick={() => setModoCadastro(!modoCadastro)} 
-              className="text-sm text-gray-500 hover:text-blue-600 transition"
+              className="text-sm font-medium text-gray-500 hover:text-blue-600 transition"
             >
               {modoCadastro ? 'Já possui uma conta? Faça Login' : 'Não tem conta? Cadastre-se aqui'}
             </button>
           </div>
         </div>
+        <p className="text-center text-xs text-gray-400 mt-8">
+          &copy; {new Date().getFullYear()} Sinuca Magalhães. Todos os direitos reservados.
+        </p>
       </div>
     )
   }
